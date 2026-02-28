@@ -1,0 +1,103 @@
+# GroundLevel Architecture & Integration Overview
+
+This document outlines the current working state of the **GroundLevel** platform, detailing its architecture, the explicit specific roles of each Google/Cesium service, where the AI insight synthesis takes place in the codebase, and the frontend ecosystem.
+
+---
+
+## 🏗️ System Architecture: The Core Loop
+
+The application runs autonomously using a decoupled backend "Brain" and frontend "Viewport".
+
+### 1. The React / Next.js Frontend (Port 3000)
+- **Role:** Presentation and orchestration.
+- **Tech Stack:** React 18, Next.js (App Router), Tailwind CSS, Resium (React for CesiumJS), Axios.
+- **Summary:** It captures user keystrokes (`SearchBox.tsx`), securely hits the backend API proxies to autocomplete place names, and ultimately asks the backend to fully analyze a Location ID. When the backend successfully returns heavily structured JSON data and bounding box (`viewport`) geometries, the frontend routes the text to `<InsightPanel />` and commands the `<Map3D />` cinematic camera to fly to the coordinates over the Photorealistic tiles.
+
+### 2. The Python / FastAPI Backend Engine (Port 8000)
+- **Role:** Data Extraction, Telemetry Aggregation, and LLM Synthesis.
+- **Tech Stack:** Python 3.12+, FastAPI, HTTPX (Asynchronous Requests), Pydantic (Schema Enforcement), `google-genai` SDK.
+- **Summary:** The backend is the engine. It ingests an ID, simultaneously fires off requests to Google Places to map out the entire neighborhood, strictly bounds the LLM using architectural prompting and Pydantic schema validation, handles cache hits/misses, and outputs perfectly stable JSON.
+
+### 3. The Redis Caching Layer (Port 6379)
+- **Role:** Token Optimization and Latency Reduction.
+- **Summary:** The `services/redis_cache.py` script intercepts the payload. If the exact neighborhood was parsed in the last 72 hours, it instantly returns the 0-token cost dictionary along with the camera bounding box, bypassing LLM generation completely.
+
+---
+
+## 🔌 API Service Roles (Google & Cesium)
+
+### Google Maps Platform
+1.  **Places Autocomplete API (Backend Proxy `api/autocomplete`):** Powering the Next.js `SearchBox`, instantly suggesting valid, clean global Place IDs as the human types. 
+2.  **Places API (New) (`services/places_service.py`):**
+    *   **Endpoint `/{place_id}`:** Pulls the exact geocoordinates (`lat`/`lng`) and the `viewport` cinematic bounding box so the 3D globe knows exactly where to move the camera.
+    *   **Endpoint `searchNearby`:** The "data scraper". It pulls the names, types, and price levels of all the local surrounding businesses to feed the LLM context.
+3.  **Map Tiles API (`Map3D.tsx`):** Handled via `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, this pipe streams gigabytes of high-resolution 3D photorealistic geometries, mesh structures, and ground textures (from Google Earth) straight into the browser canvas.
+
+### Google Gemini API
+1.  **Gemini 3.1 Pro (`services/gemini_client.py`):** The engine of GroundLevel intelligence. Its sole role is to ingest the barebones, ugly telemetry logs from Places API and synthesize them into highly readable, localized, and formatted urban demographic assessments.
+
+### Cesium Ion / Resium
+1.  **CesiumJS Engine (`frontend/public/cesium`):** The localized C++ WebGL workers that actually parse and physically render 3D scenes in the browser.
+2.  **Cesium Ion ID (`NEXT_PUBLIC_CESIUM_ION_TOKEN`):** Injected globally into `page.tsx`, this authenticates the pipeline, allowing Resium to render the camera flights and manage the terrain engine natively.
+
+---
+
+## 🧠 Insight Synthesis: Where to Focus Next
+
+As you pivot to enhancing the AI insights, you will focus entirely on **`backend/main.py`** and **`backend/services/gemini_client.py`**. 
+
+Here is exactly where the synthesis takes place:
+
+### Step A. The Orchestrator
+Open `backend/main.py`. Look closely at line `52` and below in `fetch_neighborhood_profile`.
+
+```python
+    # Line 53: This builds the ugly data block
+    prompt_payload = format_context_payload(location_details, nearby_places)
+    
+    # Line 55-63: THIS IS YOUR SYSTEM INSTRUCTION. 
+    # Edit this block to fundamentally change HOW the AI speaks and assesses.
+    system_instruction = (
+        "You are an expert urban analyst. Your tone must be direct, highly specific, and culturally intuitive..."
+    )
+    full_prompt = f"SYSTEM INSTRUCTION: {system_instruction}\n\nDATA PAYLOAD:\n{prompt_payload}"
+```
+
+### Step B. The Synthesis Request
+On line `67` in `main.py`, the payload is sent off: `profile_data = await generate_neighborhood_profile(full_prompt)`.
+
+This leads you completely into `backend/services/gemini_client.py`:
+```python
+async def generate_neighborhood_profile(prompt_payload: str) -> dict:
+    # Look at Line 50! THIS is where the restriction happens.
+    # We pass 'NeighborhoodProfile' Pydantic model into the config!
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_schema=get_gemini_schema(NeighborhoodProfile),
+        temperature=0.4
+    )
+```
+
+### 🎯 How to edit the Insights:
+If you want the AI to give you "Crime Stats" or "School Scores":
+1. Open `backend/models.py`.
+2. Find the `NeighborhoodProfile` model.
+3. Add your new field: `school_rating: str = Field(..., description="Write 2 sentences about public schools.")`
+4. The backend will *automatically* flatten that schema, violently force Gemini 3.1 Pro to give you that data, and return it.
+
+---
+
+## 🌍 Frontend Setup Mechanics
+
+If you are styling the UI or the 3D map, look at the `frontend` directory:
+
+1.  **The Master Layout (`src/app/page.tsx`):**
+    *   This sets up the `flex h-screen` split screen layout (1/3 Sidebar for Insights, 2/3 Black Canvas for Globe).
+    *   Globally authenticates the Cesium token on mount.
+    *   Handles the `axios` API calls and state management for the entire app.
+2.  **The Rendering Engine (`src/components/Map3D.tsx`):**
+    *   Accepts the `viewport` geometry bounding-box from the AI backend.
+    *   Mounts Google's `<Cesium3DTileset>`.
+    *   Triggers the `<CameraFlyTo>` 3.5s sweeping flight path to mathematically frame the destination.
+3.  **The Typography Output (`src/components/InsightPanel.tsx`):**
+    *   This purely consumes the structured JSON (`profileData.scores`, `profileData.vibe_description`) returned from the backend generation and renders it beautifully utilizing Tailwind classes.

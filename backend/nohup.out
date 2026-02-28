@@ -1,0 +1,223 @@
+INFO:     Started server process [52884]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching place details: Client error '403 Forbidden' for url 'https://places.googleapis.com/v1/places/ChIJGzE9DS1awokRdj5TiIQUiA4'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+INFO:     127.0.0.1:63860 - "GET /api/profile/ChIJGzE9DS1awokRdj5TiIQUiA4 HTTP/1.1" 404 Not Found
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching place details: Client error '403 Forbidden' for url 'https://places.googleapis.com/v1/places/ChIJmQJIxlVYwokRLgeuocVOGVU'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+INFO:     127.0.0.1:63867 - "GET /api/profile/ChIJmQJIxlVYwokRLgeuocVOGVU HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [52884]
+INFO:     Started server process [54287]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Error resolving text to Place ID: Client error '403 Forbidden' for url 'https://places.googleapis.com/v1/places:searchText'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403
+INFO:     127.0.0.1:63898 - "GET /api/profile/Williamsburg%2C%20Brooklyn HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54287]
+INFO:     Started server process [55341]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Traceback (most recent call last):
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/main.py", line 67, in fetch_neighborhood_profile
+    profile_data = await generate_neighborhood_profile(full_prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/services/gemini_client.py", line 22, in generate_neighborhood_profile
+    response = client.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 4405, in generate_content
+    response = self._generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 3654, in _generate_content
+    request_dict = _GenerateContentParameters_to_mldev(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 1084, in _GenerateContentParameters_to_mldev
+    _GenerateContentConfig_to_mldev(
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 836, in _GenerateContentConfig_to_mldev
+    t.t_schema(api_client, getv(from_object, ['response_schema'])),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/_transformers.py", line 286, in t_schema
+    return types.Schema.model_validate(schema)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/pydantic/main.py", line 567, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Gemini API Error: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+INFO:     127.0.0.1:64019 - "GET /api/profile/Williamsburg%2C%20Brooklyn HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/main.py", line 67, in fetch_neighborhood_profile
+    profile_data = await generate_neighborhood_profile(full_prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/services/gemini_client.py", line 22, in generate_neighborhood_profile
+    response = client.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 4405, in generate_content
+    response = self._generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 3654, in _generate_content
+    request_dict = _GenerateContentParameters_to_mldev(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 1084, in _GenerateContentParameters_to_mldev
+    _GenerateContentConfig_to_mldev(
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 836, in _GenerateContentConfig_to_mldev
+    t.t_schema(api_client, getv(from_object, ['response_schema'])),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/_transformers.py", line 286, in t_schema
+    return types.Schema.model_validate(schema)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/pydantic/main.py", line 567, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Gemini API Error: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+INFO:     127.0.0.1:64042 - "GET /api/profile/Williamsburg%2C%20Brooklyn HTTP/1.1" 500 Internal Server Error
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching place details: Client error '404 Not Found' for url 'https://places.googleapis.com/v1/places/ChIJGzE9DS1awokRdj5TiIQUiA4'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
+INFO:     127.0.0.1:64057 - "GET /api/profile/ChIJGzE9DS1awokRdj5TiIQUiA4 HTTP/1.1" 404 Not Found
+Traceback (most recent call last):
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/main.py", line 67, in fetch_neighborhood_profile
+    profile_data = await generate_neighborhood_profile(full_prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/services/gemini_client.py", line 22, in generate_neighborhood_profile
+    response = client.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 4405, in generate_content
+    response = self._generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 3654, in _generate_content
+    request_dict = _GenerateContentParameters_to_mldev(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 1084, in _GenerateContentParameters_to_mldev
+    _GenerateContentConfig_to_mldev(
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 836, in _GenerateContentConfig_to_mldev
+    t.t_schema(api_client, getv(from_object, ['response_schema'])),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/_transformers.py", line 286, in t_schema
+    return types.Schema.model_validate(schema)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/pydantic/main.py", line 567, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Gemini API Error: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+INFO:     127.0.0.1:64067 - "GET /api/profile/Owyhee%20County%2C%20Idaho HTTP/1.1" 500 Internal Server Error
+Traceback (most recent call last):
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/main.py", line 67, in fetch_neighborhood_profile
+    profile_data = await generate_neighborhood_profile(full_prompt)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/services/gemini_client.py", line 22, in generate_neighborhood_profile
+    response = client.models.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 4405, in generate_content
+    response = self._generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 3654, in _generate_content
+    request_dict = _GenerateContentParameters_to_mldev(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 1084, in _GenerateContentParameters_to_mldev
+    _GenerateContentConfig_to_mldev(
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/models.py", line 836, in _GenerateContentConfig_to_mldev
+    t.t_schema(api_client, getv(from_object, ['response_schema'])),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/google/genai/_transformers.py", line 286, in t_schema
+    return types.Schema.model_validate(schema)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/shauryatiwari/Desktop/gits/gods_eye/backend/venv/lib/python3.11/site-packages/pydantic/main.py", line 567, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Gemini API Error: 3 validation errors for Schema
+properties.scores.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Scores', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+properties.highlights.items.$ref
+  Extra inputs are not permitted [type=extra_forbidden, input_value='#/$defs/Highlight', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+$defs
+  Extra inputs are not permitted [type=extra_forbidden, input_value={'Highlight': {'propertie...ty'], 'type': 'OBJECT'}}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.8/v/extra_forbidden
+INFO:     127.0.0.1:64090 - "GET /api/profile/Williamsburg%2C%20Brooklyn HTTP/1.1" 500 Internal Server Error
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [55341]

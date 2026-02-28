@@ -1,0 +1,46 @@
+INFO:     Will watch for changes in these directories: ['/Users/shauryatiwari/Desktop/gits/gods_eye/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [64266] using WatchFiles
+INFO:     Started server process [64312]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     127.0.0.1:51681 - "POST /api/proximity_search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51800 - "GET /api/autocomplete?input=Williamsburg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51818 - "OPTIONS /api/proximity_search HTTP/1.1" 200 OK
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching nearby places: 
+Error fetching contextual places: 
+
+INFO:     127.0.0.1:51818 - "POST /api/proximity_search HTTP/1.1" 404 Not Found
+Failed to set Redis cache: Error 61 connecting to localhost:6379. 61.
+INFO:     127.0.0.1:51820 - "GET /api/profile/ChIJQSrBBv1bwokRbNfFHCnyeYI HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51927 - "GET /api/autocomplete?input=Williamsburg HTTP/1.1" 200 OK
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching nearby places: 
+Error fetching contextual places: 
+
+INFO:     127.0.0.1:51958 - "POST /api/proximity_search HTTP/1.1" 404 Not Found
+Failed to set Redis cache: Error 61 connecting to localhost:6379. 61.
+INFO:     127.0.0.1:51959 - "GET /api/profile/ChIJQSrBBv1bwokRbNfFHCnyeYI HTTP/1.1" 200 OK
+Error fetching place details: Client error '400 Bad Request' for url 'https://places.googleapis.com/v1/places/string'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
+INFO:     127.0.0.1:52054 - "POST /api/proximity_search HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52080 - "GET /api/autocomplete?input=Williamsburg HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52543 - "OPTIONS /api/proximity_search HTTP/1.1" 200 OK
+Redis cache miss/error: Error 61 connecting to localhost:6379. 61.
+Error fetching nearby places: 
+Error fetching contextual places: 
+
+INFO:     127.0.0.1:52543 - "POST /api/proximity_search HTTP/1.1" 404 Not Found
+Failed to set Redis cache: Error 61 connecting to localhost:6379. 61.
+INFO:     127.0.0.1:52544 - "GET /api/profile/ChIJQSrBBv1bwokRbNfFHCnyeYI HTTP/1.1" 200 OK
+INFO:     192.168.1.1:44804 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52961 - "POST /api/proximity_search HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52999 - "GET /api/autocomplete?input=Williamsburg HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [64312]
+INFO:     Stopping reloader process [64266]
