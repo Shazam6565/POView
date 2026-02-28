@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Search, MapPin, Navigation, Trash2, Layers } from "lucide-react";
+import { Search, MapPin, Navigation, Trash2, Globe } from "lucide-react";
 
 interface Suggestion {
     placePrediction: {
@@ -15,12 +15,11 @@ interface SearchBoxProps {
     onSearch: (placeId: string, intent: string, radius: number) => void;
     onRecenter: () => void;
     onClear: () => void;
-    onToggleLayers: () => void;
     isAnalyzing: boolean;
     layersVisible: boolean;
 }
 
-export default function SearchBox({ onSearch, onRecenter, onClear, onToggleLayers, isAnalyzing, layersVisible }: SearchBoxProps) {
+export default function SearchBox({ onSearch, onRecenter, onClear, isAnalyzing, layersVisible }: SearchBoxProps) {
     const [inputValue, setInputValue] = useState("");
     const [selectedPlaceId, setSelectedPlaceId] = useState("");
     const [intentValue, setIntentValue] = useState("");
@@ -84,6 +83,17 @@ export default function SearchBox({ onSearch, onRecenter, onClear, onToggleLayer
 
         if (placeId && intentValue) {
             onSearch(placeId, intentValue, radiusValue);
+        }
+    };
+
+    const handleExplore = () => {
+        let placeId = selectedPlaceId;
+        if (!placeId && suggestions.length > 0) {
+            placeId = suggestions[0].placePrediction.placeId;
+        }
+        if (placeId) {
+            // General overview instead of explicit intent
+            onSearch(placeId, "general neighborhood overview and interesting places", radiusValue);
         }
     };
 
@@ -191,12 +201,12 @@ export default function SearchBox({ onSearch, onRecenter, onClear, onToggleLayer
                     </button>
                     <button
                         type="button"
-                        onClick={onToggleLayers}
-                        disabled={isAnalyzing}
+                        onClick={handleExplore}
+                        disabled={isAnalyzing || (!selectedPlaceId && !inputValue.trim())}
                         className="col-span-1 flex flex-col items-center justify-center p-2 bg-white/10 text-white font-bold rounded-xl text-[10px] uppercase hover:bg-white/20 transition-all tracking-wider h-14"
                     >
-                        <Layers className="w-4 h-4 mb-1" />
-                        Layers
+                        <Globe className="w-4 h-4 mb-1" />
+                        Explore
                     </button>
                 </div>
             </form>

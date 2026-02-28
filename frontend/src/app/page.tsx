@@ -58,7 +58,9 @@ export default function Home() {
           intent: intent,
           radius: radius
         }),
-        axios.get(`http://localhost:8000/api/profile/${placeId}`)
+        axios.get(`http://localhost:8000/api/profile/${placeId}`, {
+          params: { intent: intent }
+        })
       ]);
 
       if (proximityRes.data && proximityRes.data.results) {
@@ -111,9 +113,6 @@ export default function Home() {
     setWeatherState("clear");
   };
 
-  const handleToggleLayers = () => {
-    setLayersVisible(prev => !prev);
-  }
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-black text-slate-100 font-sans">
@@ -177,7 +176,7 @@ export default function Home() {
           <div className="pointer-events-auto shrink-0 flex flex-col space-y-5">
             <div className="px-2 pt-2">
               <h1 className="text-4xl font-extrabold text-white tracking-wider drop-shadow-xl mb-1">
-                GroundLevel
+                POView
               </h1>
               <p className="text-white/70 text-sm font-medium tracking-wide drop-shadow-md">Autonomous Urban Intelligence</p>
             </div>
@@ -185,7 +184,6 @@ export default function Home() {
               onSearch={handleSearch}
               onRecenter={handleRecenter}
               onClear={handleClear}
-              onToggleLayers={handleToggleLayers}
               isAnalyzing={loading}
               layersVisible={layersVisible}
             />

@@ -16,14 +16,14 @@ export default function LandingPage({ onStart }: LandingPageProps) {
                 {/* Micro-label */}
                 <div className="mb-6 inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                    <span className="text-xs font-mono uppercase tracking-widest text-white/70">GroundLevel V3</span>
+                    <span className="text-xs font-mono uppercase tracking-widest text-white/70">POView V5</span>
                 </div>
 
                 {/* Hero Headline */}
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight">
-                    Your perspective <br className="hidden md:block" />
+                    The world from <br className="hidden md:block" />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
-                        of the world.
+                        your perspective.
                     </span>
                 </h1>
 

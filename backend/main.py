@@ -103,11 +103,12 @@ async def proximity_search(req: ProximityRequest):
     }
 
 @app.get("/api/profile/{place_id}")
-async def fetch_neighborhood_profile(place_id: str):
+async def fetch_neighborhood_profile(place_id: str, intent: str = None):
     """Main Orchestration endpoint for the Foundation Neighborhood Profile"""
             
     # 1. Check strict Redis Cache (Zero Token Expenditure)
-    cached_payload = await get_cached_profile(place_id)
+    cache_key = f"{place_id}_{intent}" if intent else place_id
+    cached_payload = await get_cached_profile(cache_key)
     if cached_payload:
         if "viewport" in cached_payload and "profile_data" in cached_payload and "weather" in cached_payload:
             return {
@@ -137,11 +138,14 @@ async def fetch_neighborhood_profile(place_id: str):
     prompt_payload = format_context_payload(location_details, nearby_places)
     
     # System Instruction injection specific to Module 1 with Google WeatherForecast 2 Integration
+    intent_instruction = f"The user's specific search intent is: '{intent}'. Tailor the 'vibe_description' to specifically explain WHY this neighborhood is (or isn't) highly relevant to their intent in exactly 2 punchy, actionable sentences. " if intent else ""
+    
     system_instruction = (
         "You are an expert urban analyst. Your tone must be direct, highly specific, and culturally intuitive. "
         "Do NOT use diplomatic platitudes. Provide unvarnished assessments. You must reply strictly in the exact JSON format requested. "
         f"CRITICAL GOOGLE WEATHERFORECAST 2 CONTEXT: {weather['ai_summary']} "
-        "You MUST adapt the 'vibe_description', 'best_for', and 'not_ideal_for' arrays to heavily reflect this current weather reality."
+        "You MUST adapt the 'vibe_description', 'best_for', and 'not_ideal_for' arrays to heavily reflect this current weather reality. "
+        f"{intent_instruction}"
     )
     
     full_prompt = f"SYSTEM INSTRUCTION: {system_instruction}\n\nDATA PAYLOAD:\n{prompt_payload}"
@@ -162,7 +166,7 @@ async def fetch_neighborhood_profile(place_id: str):
         "location": location_details.get("geometry", {}).get("location"),
         "weather": weather
     }
-    await set_cached_profile(place_id, cache_wrapper)
+    await set_cached_profile(cache_key, cache_wrapper)
     
     return {
         "source": "gemini", 
