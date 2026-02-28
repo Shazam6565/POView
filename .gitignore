@@ -1,0 +1,8 @@
+# Emivronments
+.env
+backend/.env
+frontend/.env
+.venv
+venv/
+node_modules/
+.DS_Store
