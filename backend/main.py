@@ -1,10 +1,12 @@
 import os
+import json
 import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import polyline
@@ -12,6 +14,7 @@ from services.places_service import get_places_details, get_nearby_places, forma
 from services.gemini_client import generate_neighborhood_profile, parse_contextual_intent
 from services.redis_cache import get_cached_profile, set_cached_profile
 from services.weather_service import fetch_weather_forecast
+from agents import run_neighborhood_workflow
 
 app = FastAPI(title="GroundLevel AI Platform")
 
@@ -175,6 +178,108 @@ async def fetch_neighborhood_profile(place_id: str, intent: str = None):
         "location": cache_wrapper["location"],
         "weather": weather
     }
+
+@app.get("/api/profile_v2/{place_id}")
+async def fetch_neighborhood_profile_v2(place_id: str, intent: str = None):
+    """V2 Neighborhood Profile using Agent ADK sequential workflow."""
+
+    # 1. Check Redis Cache
+    cache_key = f"v2_{place_id}_{intent}" if intent else f"v2_{place_id}"
+    cached_payload = await get_cached_profile(cache_key)
+    if cached_payload:
+        if all(k in cached_payload for k in ("profile_data", "viewport", "weather", "visualization_plan")):
+            return {
+                "source": "cache",
+                "data": cached_payload["profile_data"],
+                "viewport": cached_payload["viewport"],
+                "location": cached_payload["location"],
+                "weather": cached_payload["weather"],
+                "visualization_plan": cached_payload["visualization_plan"],
+            }
+
+    # 2. Aggregate data (same as v1)
+    location_details = await get_places_details(place_id)
+    if not location_details:
+        raise HTTPException(status_code=404, detail="Location not found")
+
+    lat = location_details.get("geometry", {}).get("location", {}).get("lat")
+    lng = location_details.get("geometry", {}).get("location", {}).get("lng")
+
+    if not lat or not lng:
+        raise HTTPException(status_code=400, detail="Location geometry invalid")
+
+    nearby_places = await get_nearby_places(lat, lng)
+    weather = await fetch_weather_forecast(lat, lng)
+
+    # 3. Run Agent ADK workflow
+    try:
+        result = await run_neighborhood_workflow(
+            place_id=place_id,
+            location_details=location_details,
+            nearby_places=nearby_places,
+            weather=weather,
+            intent=intent,
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"Agent Workflow Error: {e}")
+        raise HTTPException(status_code=500, detail="AI agent workflow temporarily unavailable")
+
+    profile_data = result["profile_data"]
+    visualization_plan = result["visualization_plan"]
+
+    # 4. Cache the full response
+    cache_wrapper = {
+        "profile_data": profile_data,
+        "viewport": location_details.get("geometry", {}).get("viewport"),
+        "location": location_details.get("geometry", {}).get("location"),
+        "weather": weather,
+        "visualization_plan": visualization_plan,
+    }
+    await set_cached_profile(cache_key, cache_wrapper)
+
+    return {
+        "source": "agents",
+        "data": profile_data,
+        "viewport": cache_wrapper["viewport"],
+        "location": cache_wrapper["location"],
+        "weather": weather,
+        "visualization_plan": visualization_plan,
+    }
+
+
+@app.get("/api/drone_stream/{place_id}")
+async def drone_stream(place_id: str, intent: str = None):
+    """SSE endpoint that streams CameraWaypoints one at a time."""
+
+    cache_key = f"v2_{place_id}_{intent}" if intent else f"v2_{place_id}"
+    cached_payload = await get_cached_profile(cache_key)
+
+    if not cached_payload or "visualization_plan" not in cached_payload:
+        raise HTTPException(status_code=404, detail="No visualization plan found. Generate a v2 profile first.")
+
+    plan = cached_payload["visualization_plan"]
+    waypoints = plan.get("waypoints", [])
+
+    async def event_generator():
+        for i, wp in enumerate(waypoints):
+            data = json.dumps(wp)
+            yield f"event: waypoint\ndata: {data}\n\n"
+            # Pause for the waypoint's duration + pause_after to sync with camera flight
+            total_wait = wp.get("duration", 3.0) + wp.get("pause_after", 1.0)
+            await asyncio.sleep(total_wait)
+        yield f"event: done\ndata: {json.dumps({'message': 'Flight complete'})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        },
+    )
+
 
 if __name__ == "__main__":
     import uvicorn

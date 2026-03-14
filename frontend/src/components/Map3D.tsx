@@ -3,6 +3,18 @@ import React, { useMemo } from "react";
 import { Viewer, CameraFlyTo, Cesium3DTileset, Entity, PolylineGraphics, PointGraphics, useCesium } from "resium";
 import { Cartesian3, Cartesian2, Rectangle, Math as CesiumMath, Color, SceneTransforms } from "cesium";
 
+interface CameraWaypoint {
+    label: string;
+    latitude: number;
+    longitude: number;
+    altitude: number;
+    heading: number;
+    pitch: number;
+    roll: number;
+    duration: number;
+    pause_after: number;
+}
+
 interface Map3DProps {
     viewport?: {
         low: { latitude: number; longitude: number };
@@ -14,6 +26,7 @@ interface Map3DProps {
     recenterTrigger?: number;
     layersVisible?: boolean;
     weatherState?: string;
+    droneWaypoint?: CameraWaypoint;
 }
 
 // Custom overlay component to map 3D coordinates to a 2D HTML Div
@@ -120,10 +133,27 @@ const WeatherEffects = ({ weatherState }: { weatherState?: string }) => {
     return null;
 };
 
-export default function Map3D({ viewport, location, recommendations = [], selectedRecommendation, recenterTrigger, layersVisible = true, weatherState = "clear" }: Map3DProps) {
+export default function Map3D({ viewport, location, recommendations = [], selectedRecommendation, recenterTrigger, layersVisible = true, weatherState = "clear", droneWaypoint }: Map3DProps) {
     const GOOGLE_TILE_URL = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`;
 
     const cameraConfig = useMemo(() => {
+        // Highest priority: Drone waypoint (active drone tour)
+        if (droneWaypoint) {
+            return {
+                destination: Cartesian3.fromDegrees(
+                    droneWaypoint.longitude,
+                    droneWaypoint.latitude,
+                    droneWaypoint.altitude
+                ),
+                orientation: {
+                    heading: CesiumMath.toRadians(droneWaypoint.heading),
+                    pitch: CesiumMath.toRadians(droneWaypoint.pitch),
+                    roll: droneWaypoint.roll,
+                },
+                duration: droneWaypoint.duration,
+            };
+        }
+
         if (recenterTrigger && recenterTrigger > 0) {
             // Recenter explicitly to the user's searched origin location, or fallback to NY
             const targetLat = location?.lat || 40.7300;
@@ -190,7 +220,7 @@ export default function Map3D({ viewport, location, recommendations = [], select
                 roll: 0
             }
         };
-    }, [viewport, location, recommendations, selectedRecommendation, recenterTrigger]);
+    }, [viewport, location, recommendations, selectedRecommendation, recenterTrigger, droneWaypoint]);
 
     // Generate a robust key to force CameraFlyTo to re-trigger when targets change
     const flyToKey = useMemo(() => {
@@ -263,7 +293,7 @@ export default function Map3D({ viewport, location, recommendations = [], select
                     key={flyToKey}
                     destination={cameraConfig.destination}
                     orientation={cameraConfig.orientation}
-                    duration={3.5}
+                    duration={'duration' in cameraConfig ? (cameraConfig.duration as number) : 3.5}
                 />
 
                 {layersVisible && recommendations.map((rec, index) => {

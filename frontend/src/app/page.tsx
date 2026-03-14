@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import InsightPanel from "@/components/InsightPanel";
 import SearchBox from "@/components/SearchBox";
@@ -18,6 +18,18 @@ if (typeof window !== "undefined") {
 // Dynamically import CesiumJS map to avoid SSR issues
 const Map3D = dynamic(() => import("@/components/Map3D"), { ssr: false });
 
+interface CameraWaypoint {
+  label: string;
+  latitude: number;
+  longitude: number;
+  altitude: number;
+  heading: number;
+  pitch: number;
+  roll: number;
+  duration: number;
+  pause_after: number;
+}
+
 export default function Home() {
   const [profileData, setProfileData] = useState<any>(null);
   const [viewport, setViewport] = useState<any>(null);
@@ -35,6 +47,12 @@ export default function Home() {
 
   // Weather state from backend
   const [weatherState, setWeatherState] = useState<string>("clear");
+
+  // Drone Tour state
+  const [droneWaypoints, setDroneWaypoints] = useState<CameraWaypoint[]>([]);
+  const [activeDroneWaypoint, setActiveDroneWaypoint] = useState<CameraWaypoint | null>(null);
+  const [isDroneFlying, setIsDroneFlying] = useState(false);
+  const droneTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleStart = () => {
     setIsTransitioning(true);
@@ -58,7 +76,7 @@ export default function Home() {
           intent: intent,
           radius: radius
         }),
-        axios.get(`http://localhost:8000/api/profile/${placeId}`, {
+        axios.get(`http://localhost:8000/api/profile_v2/${placeId}`, {
           params: { intent: intent }
         })
       ]);
@@ -90,6 +108,10 @@ export default function Home() {
         } else {
           setWeatherState("clear");
         }
+        // Extract visualization plan for drone tour
+        if (profileRes.data.visualization_plan && profileRes.data.visualization_plan.waypoints) {
+          setDroneWaypoints(profileRes.data.visualization_plan.waypoints);
+        }
       } else {
         setError("Failed to retrieve primary neighborhood profile.");
       }
@@ -111,7 +133,31 @@ export default function Home() {
     setLocation(null);
     setProfileData(null);
     setWeatherState("clear");
+    setDroneWaypoints([]);
+    setActiveDroneWaypoint(null);
+    setIsDroneFlying(false);
+    if (droneTimerRef.current) clearTimeout(droneTimerRef.current);
   };
+
+  const handleDroneTour = useCallback(() => {
+    if (droneWaypoints.length === 0 || isDroneFlying) return;
+    setIsDroneFlying(true);
+
+    let index = 0;
+    const flyNext = () => {
+      if (index >= droneWaypoints.length) {
+        setIsDroneFlying(false);
+        setActiveDroneWaypoint(null);
+        return;
+      }
+      const wp = droneWaypoints[index];
+      setActiveDroneWaypoint(wp);
+      index++;
+      const waitMs = ((wp.duration || 3) + (wp.pause_after || 1)) * 1000;
+      droneTimerRef.current = setTimeout(flyNext, waitMs);
+    };
+    flyNext();
+  }, [droneWaypoints, isDroneFlying]);
 
 
   return (
@@ -137,6 +183,7 @@ export default function Home() {
           recenterTrigger={recenterTrigger}
           layersVisible={layersVisible}
           weatherState={weatherState}
+          droneWaypoint={activeDroneWaypoint ?? undefined}
         />
       </div>
 
@@ -166,6 +213,20 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-300 group-hover:text-white transition-colors"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
               <span className="text-xs font-bold text-cyan-300 group-hover:text-white transition-colors tracking-wider">RECENTER</span>
             </button>
+
+            {droneWaypoints.length > 0 && (
+              <button
+                onClick={handleDroneTour}
+                disabled={isDroneFlying}
+                className={`backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] rounded-full px-4 py-3 flex items-center space-x-2 pointer-events-auto transition-all duration-300 group border ${isDroneFlying ? 'bg-purple-500/40 border-purple-400/50 cursor-not-allowed' : 'bg-purple-500/20 hover:bg-purple-500/40 border-purple-400/50'}`}
+                title="Start autonomous drone camera tour"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-colors ${isDroneFlying ? 'text-purple-200 animate-pulse' : 'text-purple-300 group-hover:text-white'}`}><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>
+                <span className={`text-xs font-bold transition-colors tracking-wider ${isDroneFlying ? 'text-purple-200' : 'text-purple-300 group-hover:text-white'}`}>
+                  {isDroneFlying ? 'FLYING...' : 'DRONE TOUR'}
+                </span>
+              </button>
+            )}
           </div>
         )}
 

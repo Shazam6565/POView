@@ -19,6 +19,12 @@ interface SearchBoxProps {
     layersVisible: boolean;
 }
 
+const EXAMPLE_SEARCHES = [
+    { label: "NYC Office Hunt", location: "129 West 29th Street, New York, NY", placeId: "ChIJlY7Zcq9ZwokRv7Zvn4Njrj0", intent: "Find the best area to rent a workspace" },
+    { label: "Brooklyn Coffee", location: "255 Madison Street, Brooklyn, NY", placeId: "ChIJBTPq7pFbwokRiQcRoOoIjV4", intent: "Find me a good place for coffee" },
+    { label: "Williamsburg Nightlife", location: "Williamsburg, Brooklyn, NY", placeId: "ChIJQSrBBv1bwokRbNfFHCnyeYI", intent: "Best bars and nightlife scene" },
+];
+
 export default function SearchBox({ onSearch, onRecenter, onClear, isAnalyzing, layersVisible }: SearchBoxProps) {
     const [inputValue, setInputValue] = useState("");
     const [selectedPlaceId, setSelectedPlaceId] = useState("");
@@ -209,6 +215,30 @@ export default function SearchBox({ onSearch, onRecenter, onClear, isAnalyzing, 
                         Explore
                     </button>
                 </div>
+
+                {/* Example Search Chips */}
+                {!isAnalyzing && (
+                    <div className="flex flex-col gap-2 pt-1">
+                        <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold px-1">Try an example</span>
+                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                            {EXAMPLE_SEARCHES.map((example) => (
+                                <button
+                                    key={example.label}
+                                    type="button"
+                                    onClick={() => {
+                                        setInputValue(example.location);
+                                        setSelectedPlaceId(example.placeId);
+                                        setIntentValue(example.intent);
+                                        onSearch(example.placeId, example.intent, radiusValue);
+                                    }}
+                                    className="flex-shrink-0 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-white/60 font-medium hover:bg-cyan-500/20 hover:border-cyan-400/30 hover:text-white/90 transition-all"
+                                >
+                                    {example.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </form>
         </div>
     );
