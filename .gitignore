@@ -9,3 +9,4 @@ node_modules/
 logs/
 *.log
 upgrades/scratch.txt
+__pycache__/
