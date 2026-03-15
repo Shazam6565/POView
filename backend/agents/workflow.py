@@ -1,0 +1,124 @@
+import json
+from google.adk.agents import SequentialAgent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+from agents.script_writer import create_script_writer_agent
+from agents.globe_controller import GlobeControllerAgent
+from agents.formatter import create_formatter_agent
+from agents.json_utils import parse_json_from_text
+
+
+def _build_sequential_agent() -> SequentialAgent:
+    """Builds the 3-agent sequential workflow."""
+    return SequentialAgent(
+        name="NeighborhoodNarrativeAgent",
+        sub_agents=[
+            create_script_writer_agent(),
+            GlobeControllerAgent(name="GlobeControllerAgent"),
+            create_formatter_agent(),
+        ],
+    )
+
+
+async def run_neighborhood_workflow(
+    place_id: str,
+    location_details: dict,
+    nearby_places: list,
+    weather: dict,
+    intent: str = None,
+) -> dict:
+    """Runs the full 3-agent neighborhood profiling workflow.
+
+    Returns: { "profile_data": dict, "visualization_plan": dict }
+    """
+    # Extract coordinates
+    lat = location_details.get("geometry", {}).get("location", {}).get("lat", 0)
+    lng = location_details.get("geometry", {}).get("location", {}).get("lng", 0)
+
+    # Format context for the agents
+    location_name = location_details.get("name", "Unknown Location")
+    address = location_details.get("formatted_address", "")
+
+    nearby_summary = []
+    for p in (nearby_places or [])[:15]:
+        name = p.get("name", "")
+        types_list = p.get("types", [])
+        rating = p.get("rating", "N/A")
+        nearby_summary.append(f"- {name} (types: {', '.join(types_list[:3])}, rating: {rating})")
+    nearby_text = "\n".join(nearby_summary) if nearby_summary else "Limited data available."
+
+    weather_summary = weather.get("ai_summary", "Weather data unavailable.")
+    intent_text = f"User's search intent: '{intent}'" if intent else "General neighborhood exploration."
+
+    context_payload = f"""Location: {location_name}
+Address: {address}
+Coordinates: ({lat}, {lng})
+
+{intent_text}
+
+Current Weather: {weather_summary}
+
+Nearby Places:
+{nearby_text}"""
+
+    # Build and run the agent pipeline
+    agent = _build_sequential_agent()
+    session_service = InMemorySessionService()
+
+    session = await session_service.create_session(
+        app_name="poview",
+        user_id="poview_user",
+        state={
+            "origin_lat": lat,
+            "origin_lng": lng,
+            "context_payload": context_payload,
+            "weather_summary": weather_summary,
+            "intent": intent or "general exploration",
+        },
+    )
+
+    runner = Runner(
+        agent=agent,
+        app_name="poview",
+        session_service=session_service,
+    )
+
+    # Run the sequential agent pipeline
+    final_event = None
+    async for event in runner.run_async(
+        user_id="poview_user",
+        session_id=session.id,
+        new_message=types.Content(
+            parts=[types.Part(text=context_payload)],
+            role="user",
+        ),
+    ):
+        final_event = event
+
+    # Extract results from session state
+    updated_session = await session_service.get_session(
+        app_name="poview",
+        user_id="poview_user",
+        session_id=session.id,
+    )
+
+    state = updated_session.state if updated_session else {}
+
+    # Parse the final UI payload
+    raw_payload = state.get("final_ui_payload", "{}")
+    if isinstance(raw_payload, str):
+        try:
+            profile_data = parse_json_from_text(raw_payload)
+        except Exception:
+            profile_data = json.loads(raw_payload) if isinstance(raw_payload, str) else raw_payload
+    else:
+        profile_data = raw_payload
+
+    visualization_plan = state.get("visualization_plan", {"waypoints": [], "total_duration": 0})
+
+    return {
+        "profile_data": profile_data,
+        "visualization_plan": visualization_plan,
+    }
