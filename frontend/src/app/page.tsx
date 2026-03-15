@@ -5,6 +5,8 @@ import InsightPanel from "@/components/InsightPanel";
 import SearchBox from "@/components/SearchBox";
 import RecommendationsPanel from "@/components/RecommendationsPanel";
 import LandingPage from "@/components/LandingPage";
+import { DefaultLocation, getStoredLocation } from "@/components/LocationSelector";
+import VoiceAssistant from "@/components/VoiceAssistant";
 import axios from "axios";
 import { Ion } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
@@ -45,6 +47,9 @@ export default function Home() {
   const [hasStarted, setHasStarted] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Default location from localStorage
+  const [defaultLocation, setDefaultLocation] = useState<DefaultLocation>(getStoredLocation);
+
   // Weather state from backend
   const [weatherState, setWeatherState] = useState<string>("clear");
 
@@ -54,9 +59,11 @@ export default function Home() {
   const [isDroneFlying, setIsDroneFlying] = useState(false);
   const droneTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleStart = () => {
+  const handleStart = (defaultLoc: DefaultLocation) => {
+    // Pre-set location so Map3D flies to chosen location instead of NYC
+    setLocation({ lat: defaultLoc.lat, lng: defaultLoc.lng });
+
     setIsTransitioning(true);
-    // Wait for the slide-up animation (1000ms) before completely unmounting
     setTimeout(() => {
       setHasStarted(true);
     }, 1000);
@@ -139,6 +146,42 @@ export default function Home() {
     if (droneTimerRef.current) clearTimeout(droneTimerRef.current);
   };
 
+  const handleVoiceSearchResult = useCallback((data: {
+    profileData: any;
+    viewport: any;
+    location: any;
+    weather: any;
+    droneWaypoints: any[];
+    recommendations: any[];
+  }) => {
+    // Merge voice results into existing state (same pipeline as text search)
+    if (data.profileData) {
+      setProfileData(data.profileData);
+    }
+    if (data.viewport) {
+      setViewport(data.viewport);
+    }
+    if (data.location) {
+      setLocation({ lat: data.location.lat, lng: data.location.lng });
+    }
+    if (data.weather && data.weather.render_state) {
+      setWeatherState(data.weather.render_state);
+    }
+    if (data.droneWaypoints && data.droneWaypoints.length > 0) {
+      setDroneWaypoints(data.droneWaypoints);
+    }
+    if (data.recommendations && data.recommendations.length > 0) {
+      setRecommendations(data.recommendations.map((rec: any) => ({
+        name: rec.name,
+        rating: rec.rating,
+        description: rec.description,
+        lat: rec.lat,
+        lng: rec.lng,
+        routingPath: [],
+      })));
+    }
+  }, []);
+
   const handleDroneTour = useCallback(() => {
     if (droneWaypoints.length === 0 || isDroneFlying) return;
     setIsDroneFlying(true);
@@ -169,7 +212,7 @@ export default function Home() {
           className={`absolute inset-0 z-50 transition-all duration-1000 ease-[cubic-bezier(0.76,0,0.24,1)] ${isTransitioning ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
             }`}
         >
-          <LandingPage onStart={handleStart} />
+          <LandingPage onStart={handleStart} defaultLocation={defaultLocation} onLocationChange={setDefaultLocation} />
         </div>
       )}
 
@@ -267,6 +310,12 @@ export default function Home() {
             )}
           </div>
         </div>
+
+        {/* Voice Assistant */}
+        <VoiceAssistant
+          onSearchResult={handleVoiceSearchResult}
+          onDroneTourStart={handleDroneTour}
+        />
 
         {/* Right Floating Recommendations Panel */}
         {recommendations && recommendations.length > 0 && (

@@ -201,6 +201,33 @@ async def contextual_places_search(lat: float, lng: float, radius_miles: float, 
         
     return structured_results
 
+async def reverse_geocode(lat: float, lng: float) -> dict:
+    """Convert lat/lng to a place ID and display name via Google Geocoding API."""
+    url = "https://maps.googleapis.com/maps/api/geocode/json"
+    params = {
+        "latlng": f"{lat},{lng}",
+        "key": API_KEY,
+        "result_type": "locality|neighborhood|sublocality",
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            results = data.get("results", [])
+            if not results:
+                return {}
+            first = results[0]
+            return {
+                "place_id": first.get("place_id", ""),
+                "formatted_address": first.get("formatted_address", ""),
+            }
+        except Exception as e:
+            print(f"Error reverse geocoding: {e}")
+            return {}
+
+
 async def get_directions(origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> str:
     """Fetch routing directions using Google Maps Routes API v2."""
     url = "https://routes.googleapis.com/directions/v2:computeRoutes"
