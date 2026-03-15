@@ -1,20 +1,29 @@
 import os
 import json
 import asyncio
+import base64
+import traceback
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import polyline
-from services.places_service import get_places_details, get_nearby_places, format_context_payload, get_autocomplete_predictions, contextual_places_search, get_directions
+from google.adk.runners import Runner
+from google.adk.agents.run_config import RunConfig, StreamingMode
+from google.adk.agents.live_request_queue import LiveRequestQueue
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+from services.places_service import get_places_details, get_nearby_places, format_context_payload, get_autocomplete_predictions, contextual_places_search, get_directions, reverse_geocode
 from services.gemini_client import generate_neighborhood_profile, parse_contextual_intent
 from services.redis_cache import get_cached_profile, set_cached_profile
 from services.weather_service import fetch_weather_forecast
 from agents import run_neighborhood_workflow
+from agents.live_agent import create_live_agent
 
 app = FastAPI(title="GroundLevel AI Platform")
 
@@ -26,6 +35,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Live Agent Setup ---
+live_agent = create_live_agent()
+live_session_service = InMemorySessionService()
+live_runner = Runner(
+    agent=live_agent,
+    app_name="poview-live",
+    session_service=live_session_service,
+)
+
 @app.get("/api/autocomplete")
 async def autocomplete_proxy(input: str):
     """Secure proxy for Places Autocomplete."""
@@ -33,6 +51,35 @@ async def autocomplete_proxy(input: str):
         return {"suggestions": []}
     suggestions = await get_autocomplete_predictions(input)
     return {"suggestions": suggestions}
+
+@app.get("/api/resolve_location/{place_id}")
+async def resolve_location(place_id: str):
+    """Resolve a placeId to coordinates and display name."""
+    details = await get_places_details(place_id)
+    if not details or not details.get("geometry"):
+        raise HTTPException(status_code=404, detail="Place not found")
+    loc = details["geometry"]["location"]
+    return {
+        "placeId": place_id,
+        "displayName": details.get("name", details.get("formatted_address", "")),
+        "lat": loc["lat"],
+        "lng": loc["lng"],
+    }
+
+
+@app.get("/api/reverse_geocode")
+async def reverse_geocode_endpoint(lat: float, lng: float):
+    """Convert lat/lng to a place ID and display name."""
+    result = await reverse_geocode(lat, lng)
+    if not result or not result.get("place_id"):
+        raise HTTPException(status_code=404, detail="Could not resolve location")
+    return {
+        "placeId": result["place_id"],
+        "displayName": result["formatted_address"],
+        "lat": lat,
+        "lng": lng,
+    }
+
 
 class ProximityRequest(BaseModel):
     place_id: str
@@ -279,6 +326,182 @@ async def drone_stream(place_id: str, intent: str = None):
             "Connection": "keep-alive",
         },
     )
+
+
+@app.websocket("/ws/live/{session_id}")
+async def live_websocket(websocket: WebSocket, session_id: str):
+    """Bidirectional audio streaming via Gemini Live API + ADK."""
+    await websocket.accept()
+
+    # Create a session for this connection
+    user_id = f"live_user_{session_id}"
+    session = await live_session_service.create_session(
+        app_name="poview-live",
+        user_id=user_id,
+    )
+
+    # Configure BIDI streaming with audio
+    run_config = RunConfig(
+        streaming_mode=StreamingMode.BIDI,
+        response_modalities=["AUDIO"],
+        input_audio_transcription=types.AudioTranscriptionConfig(),
+        output_audio_transcription=types.AudioTranscriptionConfig(),
+    )
+
+    live_queue = LiveRequestQueue()
+
+    async def upstream_task():
+        """Reads audio/text from WebSocket and pushes into the LiveRequestQueue."""
+        try:
+            while True:
+                data = await websocket.receive()
+
+                if "bytes" in data and data["bytes"]:
+                    # Binary audio data from browser mic (Int16 PCM 16kHz)
+                    audio_bytes = data["bytes"]
+                    live_queue.send_realtime(
+                        types.Blob(
+                            mime_type="audio/pcm;rate=16000",
+                            data=audio_bytes,
+                        )
+                    )
+                elif "text" in data and data["text"]:
+                    # Text message (could be a text command)
+                    try:
+                        msg = json.loads(data["text"])
+                        if msg.get("type") == "text_input":
+                            live_queue.send_content(
+                                types.Content(
+                                    parts=[types.Part(text=msg["text"])],
+                                    role="user",
+                                )
+                            )
+                    except json.JSONDecodeError:
+                        pass
+
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            print(f"Upstream error: {e}")
+        finally:
+            live_queue.close()
+
+    async def downstream_task():
+        """Reads events from run_live and sends audio/text back over WebSocket."""
+        try:
+            async for event in live_runner.run_live(
+                user_id=user_id,
+                session_id=session.id,
+                live_request_queue=live_queue,
+                run_config=run_config,
+            ):
+                if not event:
+                    continue
+
+                # Handle audio output
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        # Audio response
+                        if part.inline_data and part.inline_data.data:
+                            audio_bytes = part.inline_data.data
+                            try:
+                                await websocket.send_bytes(audio_bytes)
+                            except Exception:
+                                return
+
+                        # Text transcription from agent
+                        if part.text:
+                            try:
+                                await websocket.send_text(
+                                    json.dumps({
+                                        "type": "transcript",
+                                        "role": "agent",
+                                        "text": part.text,
+                                        "finished": True,
+                                    })
+                                )
+                            except Exception:
+                                return
+
+                # Handle input transcription
+                if hasattr(event, "input_transcription") and event.input_transcription:
+                    try:
+                        await websocket.send_text(
+                            json.dumps({
+                                "type": "transcript",
+                                "role": "user",
+                                "text": event.input_transcription.text,
+                                "finished": bool(getattr(event.input_transcription, "finished", False)),
+                            })
+                        )
+                    except Exception:
+                        return
+
+                # Handle output transcription (agent speech-to-text)
+                if hasattr(event, "output_transcription") and event.output_transcription:
+                    try:
+                        await websocket.send_text(
+                            json.dumps({
+                                "type": "transcript",
+                                "role": "agent",
+                                "text": event.output_transcription.text,
+                                "finished": bool(getattr(event.output_transcription, "finished", False)),
+                            })
+                        )
+                    except Exception:
+                        return
+
+                # Handle tool calls and their results
+                if hasattr(event, "tool_calls") and event.tool_calls:
+                    await websocket.send_text(
+                        json.dumps({"type": "state", "state": "processing"})
+                    )
+
+                if hasattr(event, "tool_results") and event.tool_results:
+                    for result in event.tool_results:
+                        tool_name = getattr(result, "name", "unknown")
+                        tool_data = None
+                        if hasattr(result, "content") and result.content:
+                            for p in result.content:
+                                if hasattr(p, "text") and p.text:
+                                    try:
+                                        tool_data = json.loads(p.text)
+                                    except json.JSONDecodeError:
+                                        tool_data = {"text": p.text}
+                        try:
+                            await websocket.send_text(
+                                json.dumps({
+                                    "type": "tool_result",
+                                    "tool": tool_name,
+                                    "data": tool_data,
+                                })
+                            )
+                        except Exception:
+                            return
+
+        except Exception as e:
+            print(f"Downstream error: {e}")
+            traceback.print_exc()
+            try:
+                await websocket.send_text(
+                    json.dumps({"type": "error", "message": str(e)})
+                )
+            except Exception:
+                pass
+
+    # Run upstream and downstream concurrently
+    upstream = asyncio.create_task(upstream_task())
+    downstream = asyncio.create_task(downstream_task())
+
+    try:
+        await asyncio.gather(upstream, downstream, return_exceptions=True)
+    finally:
+        upstream.cancel()
+        downstream.cancel()
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

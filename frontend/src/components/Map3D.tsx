@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { Viewer, CameraFlyTo, Cesium3DTileset, Entity, PolylineGraphics, PointGraphics, useCesium } from "resium";
 import { Cartesian3, Cartesian2, Rectangle, Math as CesiumMath, Color, SceneTransforms } from "cesium";
+import RecommendationPin3D from "./RecommendationPin3D";
 
 interface CameraWaypoint {
     label: string;
@@ -29,68 +30,6 @@ interface Map3DProps {
     droneWaypoint?: CameraWaypoint;
 }
 
-// Custom overlay component to map 3D coordinates to a 2D HTML Div
-const RecommendationOverlay = ({ recommendation, index }: { recommendation: any, index: number }) => {
-    const { scene } = useCesium();
-    const overlayRef = React.useRef<HTMLDivElement>(null);
-    const [isExpanded, setIsExpanded] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!scene || !recommendation || !recommendation.lat || !recommendation.lng) return;
-
-        const position3D = Cartesian3.fromDegrees(recommendation.lng, recommendation.lat, 20);
-
-        const updatePosition = () => {
-            if (overlayRef.current) {
-                const canvasPosition = SceneTransforms.worldToWindowCoordinates(scene, position3D);
-                if (canvasPosition) {
-                    overlayRef.current.style.display = 'block';
-                    overlayRef.current.style.transform = `translate(${canvasPosition.x}px, ${canvasPosition.y - 40}px) translate(-50%, -100%)`; // Center horizontally, place ABOVE the point
-                } else {
-                    // Behind the camera / off screen
-                    overlayRef.current.style.display = 'none';
-                }
-            }
-        };
-
-        const postRenderListener = scene.postRender.addEventListener(updatePosition);
-        return () => {
-            postRenderListener();
-        };
-    }, [scene, recommendation]);
-
-    if (!recommendation) return null;
-
-    return (
-        <div
-            ref={overlayRef}
-            className="absolute top-0 left-0 pointer-events-auto z-10 cursor-pointer transition-all duration-300 ease-in-out"
-            style={{ display: 'none' }} // Hidden initially until positioned
-            onClick={() => setIsExpanded(!isExpanded)}
-        >
-            <div className={`bg-black/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] flex flex-col overflow-hidden transition-all duration-300 ${isExpanded ? 'w-[320px]' : 'w-[200px]'}`}>
-                {/* Header Section */}
-                <div className="p-3 border-b border-white/10 flex justify-between items-start bg-gradient-to-r from-transparent to-white/5">
-                    <div className="flex-1">
-                        <h3 className="text-white font-bold text-base leading-tight drop-shadow-md truncate">{recommendation.name}</h3>
-                        <div className="flex items-center space-x-1 mt-1">
-                            <span className="text-cyan-400 text-xs font-mono font-bold">{recommendation.rating.toFixed(1)}</span>
-                            <span className="text-white/50 text-[10px] tracking-widest uppercase">STARS</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Expandable Body */}
-                <div className={`transition-all duration-300 ${isExpanded ? 'max-h-[200px] opacity-100 p-3' : 'max-h-0 opacity-0 p-0'} overflow-auto scrollbar-hide`}>
-                    <p className="text-white/80 text-sm leading-relaxed">{recommendation.description}</p>
-                </div>
-
-                {/* Bottom decorative anchor pointer */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-black/70 backdrop-blur-xl border-b border-r border-white/20 rotate-45"></div>
-            </div>
-        </div>
-    );
-};
 
 // WeatherEffects manages dynamic Cesium environment based on Google WeatherForecast 2 context
 const WeatherEffects = ({ weatherState }: { weatherState?: string }) => {
@@ -305,8 +244,8 @@ export default function Map3D({ viewport, location, recommendations = [], select
                             <Entity position={Cartesian3.fromDegrees(rec.lng, rec.lat, 20)}>
                                 <PointGraphics pixelSize={14} color={Color.CYAN} outlineColor={Color.WHITE} outlineWidth={3} />
                             </Entity>
-                            {/* 2D Interactive HTML Overlay */}
-                            <RecommendationOverlay recommendation={rec} index={index} />
+                            {/* 3D Animated Pin Overlay */}
+                            <RecommendationPin3D recommendation={rec} index={index} />
 
                             {/* Routing Path */}
                             {pathPositions && (
