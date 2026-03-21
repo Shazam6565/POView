@@ -69,7 +69,7 @@ export default function LandingPage({
             <span>Docs</span>
           </Link>
           <a
-            href="https://github.com/adityasugandhi/POView"
+            href="https://github.com/Shazam6565/POView-v1.0.2"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70 backdrop-blur-md transition-all hover:bg-white/10 hover:text-white"
