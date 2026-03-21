@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Minimize2, Maximize2 } from "lucide-react";
 import VoiceAssistant from "@/components/VoiceAssistant";
 import TourProgressBar from "@/components/TourProgressBar";
 import GridScanLoader from "@/components/GridScanLoader";
+import { SystemStatusCard } from "@/components/SystemStatusCard";
 import { useSimulationStore } from "@/store/useSimulationStore";
 import { useTourPlayback } from "@/hooks/useTourPlayback";
 import {
@@ -595,6 +596,11 @@ export default function Home() {
                 )}
               </>
             )}
+        </div>
+
+        {/* Global Floating UI Layer Top-Right */}
+        <div className="absolute top-6 right-6 z-50 pointer-events-none flex flex-col gap-4">
+          <SystemStatusCard />
         </div>
 
         {/* Floating UI Layer Left Side */}

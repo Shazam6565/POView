@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { Mic, MicOff, ChevronDown } from "lucide-react";
+import { Mic, MicOff, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 interface LiveModel {
   id: string;
@@ -57,7 +57,7 @@ export interface VoiceAssistantProps {
   }) => void;
 }
 
-type VoiceState = "idle" | "listening" | "processing" | "speaking" | "muted";
+type VoiceState = "idle" | "listening" | "processing" | "thinking" | "speaking" | "muted";
 
 export default function VoiceAssistant({
   onProfileData,
@@ -71,6 +71,7 @@ export default function VoiceAssistant({
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [panelVisible, setPanelVisible] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const fadeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const flightCaptureRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -205,20 +206,21 @@ export default function VoiceAssistant({
               });
             }
           }, 20000);
-
-          // Auto-trigger neighborhood analysis so InsightPanel populates
-          if (d.place_name) {
-            sendTextRef.current(`Analyze ${d.place_name} neighborhood in detail`);
-          }
           break;
+
         case "neighborhood":
         case "search_neighborhood":
           useSimulationStore.getState().setIsScanning(false);
+          if (d.status === "analysis_started") {
+            useSimulationStore.getState().startAnalysis("search_neighborhood");
+          }
           if (d.profile_data || d.profile) {
             onProfileData?.(
               (d.profile_data || d.profile) as NeighborhoodProfile,
               (d.place_id as string) || lastFlyToPlaceRef.current || "",
             );
+            // Analysis is finished when profile data arrives
+            useSimulationStore.getState().completeAnalysis();
           }
           if (d.location) {
             onLocationUpdate?.(
@@ -430,7 +432,7 @@ export default function VoiceAssistant({
           setVoiceState(isRecording ? "listening" : "idle");
         }
         if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-        fadeTimerRef.current = setTimeout(() => setPanelVisible(false), 8000);
+        // Removed auto-hide timer; panel should persist while connected
       });
     }
   }, [isPlaying, isRecording, isConnected, isMuted]);
@@ -453,18 +455,19 @@ export default function VoiceAssistant({
 
         // Always fire an immediate greeting so the user hears the system is alive.
         // A small delay lets the Gemini session fully initialize before receiving text.
-        setTimeout(() => {
+        /* setTimeout(() => {
           sendText(
             "The user just activated the voice assistant. " +
             "Greet them warmly and concisely in 1-2 sentences. " +
             "Let them know they can ask you to fly anywhere, explore a neighborhood, or find recommendations. " +
             "Do NOT ask a question — just welcome them and tell them you're ready."
           );
-        }, 600);
+        }, 600); */
+
 
         // Async location enrichment — sends a silent context update once geocode resolves.
         // Kept separate so the greeting never blocks on network.
-        const storeState = useSimulationStore.getState();
+        /* const storeState = useSimulationStore.getState();
         const loc = storeState.location || storeState.defaultLocation;
         if (loc) {
           fetch(`/api/reverse_geocode?lat=${loc.lat}&lng=${loc.lng}`)
@@ -476,7 +479,7 @@ export default function VoiceAssistant({
               }
             })
             .catch(() => {});
-        }
+        } */
       } catch (err) {
         console.error("[Voice] toggle failed:", err);
         stopMic();
@@ -536,6 +539,8 @@ export default function VoiceAssistant({
     listening: "bg-cyan-500/20 border-cyan-400/50 text-cyan-300 animate-pulse",
     processing:
       "bg-purple-500/20 border-purple-400/50 text-purple-300 animate-pulse",
+    thinking:
+      "bg-purple-500/20 border-purple-400/50 text-purple-300 animate-pulse",
     speaking:
       "bg-green-500/20 border-green-400/50 text-green-300 animate-pulse",
   }[voiceState];
@@ -544,8 +549,13 @@ export default function VoiceAssistant({
     <>
       {/* Transcript panel — above the button */}
       {panelVisible && transcript.length > 0 && (
-        <div className="w-[480px] bg-black/80 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 z-20 transition-opacity duration-500 flex flex-col pointer-events-auto shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
-          <div className="max-h-48 overflow-y-auto space-y-4 pr-2">
+        <div className="w-[640px] bg-black/80 backdrop-blur-2xl border border-white/20 rounded-2xl p-4 z-20 transition-all duration-500 flex flex-col pointer-events-auto shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]">
+          <div className="flex justify-between items-center mb-0 pb-0">
+             <button onClick={() => setIsExpanded(!isExpanded)} className="ml-auto w-full flex justify-end text-white/50 hover:text-white transition-colors">
+               {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+             </button>
+          </div>
+          <div className={`overflow-y-auto space-y-4 pr-2 transition-all duration-300 ${isExpanded ? "max-h-96 mt-2 opacity-100" : "max-h-0 opacity-0 overflow-hidden"}`}>
             {transcript.map((line, i) => (
               <p
                 key={i}
@@ -566,22 +576,33 @@ export default function VoiceAssistant({
             <div ref={transcriptEndRef} />
           </div>
           {/* State indicator + Analyze Now */}
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between shrink-0">
+          <div className={`pt-3 flex items-center justify-between shrink-0 ${isExpanded ? "mt-4 border-t border-white/10" : ""}`}>
             <div className="flex items-center space-x-2">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  voiceState === "idle"
-                    ? "bg-white/20"
-                    : voiceState === "listening"
-                      ? "bg-cyan-400 animate-pulse"
-                      : voiceState === "processing"
-                        ? "bg-purple-400 animate-pulse"
-                        : "bg-green-400 animate-pulse"
-                }`}
-              />
-              <span className="text-xs text-white/40 tracking-widest uppercase font-bold">
-                {voiceState}
-              </span>
+              {voiceState === "thinking" ? (
+                <>
+                  <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+                  <span className="text-xs text-purple-300 tracking-widest uppercase font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                    3.0 Flash Thinking
+                  </span>
+                </>
+              ) : (
+                <>
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    voiceState === "idle"
+                      ? "bg-white/20"
+                      : voiceState === "listening"
+                        ? "bg-cyan-400 animate-pulse"
+                        : voiceState === "processing"
+                          ? "bg-purple-400 animate-pulse"
+                          : "bg-green-400 animate-pulse"
+                  }`}
+                />
+                <span className="text-xs text-white/40 tracking-widest uppercase font-bold">
+                  {voiceState}
+                </span>
+                </>
+              )}
             </div>
             {lastFlyToPlace && isConnected && (
               <button

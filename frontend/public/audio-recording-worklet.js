@@ -5,7 +5,7 @@
 class AudioRecordingProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
-    this._buffer = new Int16Array(2048);
+    this._buffer = new Int16Array(1024);
     this._bufferIndex = 0;
   }
 

@@ -7,6 +7,7 @@ a NarrationTimeline that temporally binds narration text to camera waypoints.
 """
 
 import json
+import math
 import re
 
 from google.adk.agents import LlmAgent
@@ -88,7 +89,17 @@ def compute_trajectory_timestamps(segments: list, opening_duration: float) -> li
     """
     Compute dense trajectory timestamps (every 0.5s) by interpolating
     between waypoints across the full tour duration.
+
+    Altitude uses a parabolic arc between waypoints: the camera lifts by
+    ARC_CLEARANCE_M at the midpoint of each transit, ensuring it always
+    clears NYC buildings instead of cutting through facades.
     """
+    # Extra altitude (meters) injected at the midpoint of each transit arc.
+    # sin(π·progress) peaks at 1.0 at progress=0.5 and returns to 0 at
+    # both endpoints, so the camera departs and arrives at the intended
+    # waypoint altitude while clearing obstacles in between.
+    ARC_CLEARANCE_M = 90.0
+
     timestamps = []
 
     # Build waypoint timeline with absolute start times
@@ -122,37 +133,50 @@ def compute_trajectory_timestamps(segments: list, opening_duration: float) -> li
     # Generate samples at 0.5s intervals
     t = 0.0
     while t <= total_time:
-        # Find which segment we're in
-        current_wp = waypoint_timeline[0]
-        next_wp = waypoint_timeline[0]
-
+        # Find which segment's timeframe we are currently in
+        current_seg_idx = 0
         for i in range(len(waypoint_timeline)):
-            if waypoint_timeline[i]["start_time"] <= t:
-                current_wp = waypoint_timeline[i]
-                next_wp = waypoint_timeline[i + 1] if i + 1 < len(waypoint_timeline) else current_wp
+            if t >= waypoint_timeline[i]["start_time"]:
+                current_seg_idx = i
 
-        # Interpolation factor within the flight duration
-        flight_start = current_wp["start_time"]
-        flight_duration = current_wp["duration"]
-        if flight_duration > 0 and current_wp != next_wp:
+        target_wp = waypoint_timeline[current_seg_idx]
+        # The previous waypoint is where we start the flight from
+        prev_wp = waypoint_timeline[current_seg_idx - 1] if current_seg_idx > 0 else target_wp
+
+        flight_start = target_wp["start_time"]
+        flight_duration = target_wp["duration"]
+
+        # We only fly from prev_wp to target_wp during the first `flight_duration` seconds
+        # of the current segment's timeframe. Afterwards, we sit at target_wp.
+        if flight_duration > 0 and prev_wp != target_wp:
             progress = min(1.0, max(0.0, (t - flight_start) / flight_duration))
         else:
             progress = 1.0
 
-        # Lerp position
-        lat = current_wp["lat"] + (next_wp["lat"] - current_wp["lat"]) * progress
-        lng = current_wp["lng"] + (next_wp["lng"] - current_wp["lng"]) * progress
-        alt = current_wp["alt"] + (next_wp["alt"] - current_wp["alt"]) * progress
+        # Lerp lat/lng linearly (roads are relatively flat)
+        lat = prev_wp["lat"] + (target_wp["lat"] - prev_wp["lat"]) * progress
+        lng = prev_wp["lng"] + (target_wp["lng"] - prev_wp["lng"]) * progress
 
-        # Angular interpolation for heading
-        heading_diff = next_wp["heading"] - current_wp["heading"]
+        # Parabolic arc for altitude: lifts ARC_CLEARANCE_M at the midpoint so the
+        # camera arcs over buildings rather than cutting through them.
+        # At progress=0 and progress=1 the bonus is 0, matching waypoint altitudes exactly.
+        base_alt = prev_wp["alt"] + (target_wp["alt"] - prev_wp["alt"]) * progress
+        arc_bonus = ARC_CLEARANCE_M * math.sin(math.pi * progress)
+        alt = base_alt + arc_bonus
+
+        # Smooth the pitch upward during the arc peak so the camera looks slightly
+        # more forward (less straight-down) while climbing, then steepens on descent.
+        base_pitch = prev_wp["pitch"] + (target_wp["pitch"] - prev_wp["pitch"]) * progress
+        pitch_lift = 8.0 * math.sin(math.pi * progress)  # +8° at midpoint (less steep)
+        pitch = base_pitch + pitch_lift
+
+        # Angular interpolation for heading (shortest-path)
+        heading_diff = target_wp["heading"] - prev_wp["heading"]
         if heading_diff > 180:
             heading_diff -= 360
         elif heading_diff < -180:
             heading_diff += 360
-        heading = current_wp["heading"] + heading_diff * progress
-
-        pitch = current_wp["pitch"] + (next_wp["pitch"] - current_wp["pitch"]) * progress
+        heading = prev_wp["heading"] + heading_diff * progress
 
         timestamps.append({
             "time_s": round(t, 2),

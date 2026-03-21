@@ -42,7 +42,7 @@ export default function InsightPanel({
     (state) => state.analysisState
   );
 
-  if (isAnalyzing && !profileData) {
+  if (isAnalyzing) {
     return <AnalysisSkeleton stage={currentStage} />;
   }
 

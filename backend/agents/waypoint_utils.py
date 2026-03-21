@@ -80,7 +80,11 @@ def sample_road_points(
 def build_transit_waypoints(
     decoded: List[Tuple[float, float]], dest_name: str
 ) -> List[CameraWaypoint]:
-    """Return intermediate road-following waypoints from a decoded polyline."""
+    """Return intermediate road-following waypoints from a decoded polyline.
+
+    Altitude is set high enough to clear NYC mid-rise buildings (~150m)
+    while still giving a clear view of the street grid below.
+    """
     sampled = sample_road_points(decoded, max_points=3)
     if not sampled:
         return []
@@ -97,11 +101,11 @@ def build_transit_waypoints(
             label=f"Transit to {dest_name} ({idx + 1})",
             latitude=lat,
             longitude=lng,
-            altitude=90,
+            altitude=150,   # raised from 90 — clears NYC mid-rise facades
             heading=heading,
-            pitch=-15,
+            pitch=-22,      # steeper than -15 gives a clean road-corridor view
             roll=0,
-            duration=2.0,
+            duration=2.5,   # slightly slower transit for cinematic feel
             pause_after=0.2,
         ))
 
@@ -124,10 +128,10 @@ async def compute_waypoints_for_places(
     places = places[:5]
     waypoints = []
 
-    # Overview
+    # Overview — high enough for a dramatic NYC establishing shot
     waypoints.append(CameraWaypoint(
         label="Overview", latitude=origin_lat, longitude=origin_lng,
-        altitude=800, heading=0, pitch=-30, roll=0, duration=4.0, pause_after=2.0,
+        altitude=900, heading=0, pitch=-35, roll=0, duration=4.0, pause_after=2.0,
     ))
 
     if not places:
@@ -137,12 +141,12 @@ async def compute_waypoints_for_places(
         ))
         return waypoints
 
-    # Descent
+    # Descent — pull forward toward first POI while descending
     first = places[0]
     descent_heading = compute_heading(origin_lat, origin_lng, first["lat"], first["lng"])
     waypoints.append(CameraWaypoint(
         label="Descent", latitude=origin_lat, longitude=origin_lng,
-        altitude=200, heading=descent_heading, pitch=-25, roll=0, duration=3.0, pause_after=0.5,
+        altitude=280, heading=descent_heading, pitch=-28, roll=0, duration=3.0, pause_after=0.5,
     ))
 
     # Fetch all routes in parallel
@@ -181,12 +185,14 @@ async def compute_waypoints_for_places(
             approach = compute_heading(origin_lat, origin_lng, place["lat"], place["lng"])
 
         reversed_bearing = (approach + 180) % 360
-        cam_lat, cam_lng = offset_point(place["lat"], place["lng"], reversed_bearing, 100)
+        # 180m standoff — camera sits across the intersection, not inside the building
+        cam_lat, cam_lng = offset_point(place["lat"], place["lng"], reversed_bearing, 180)
         face_heading = compute_heading(cam_lat, cam_lng, place["lat"], place["lng"])
 
         waypoints.append(CameraWaypoint(
             label=place["name"], latitude=cam_lat, longitude=cam_lng,
-            altitude=40, heading=face_heading, pitch=-12, roll=0, duration=3.0, pause_after=1.5,
+            # 80m: above ground-floor facades, below mid-rise rooflines — clean hero framing
+            altitude=80, heading=face_heading, pitch=-18, roll=0, duration=3.5, pause_after=1.5,
         ))
 
     # Return

@@ -133,10 +133,10 @@ export default function Map3D({
     const targetCartesian = Cartesian3.fromDegrees(targetLng, targetLat, 0);
     const transform = Transforms.eastNorthUpToFixedFrame(targetCartesian);
 
-    const ORBIT_DURATION_MS = 10000;
-    const ORBIT_RANGE = 120;
-    const BASE_PITCH = CesiumMath.toRadians(-25);
-    const WOBBLE_AMPLITUDE = CesiumMath.toRadians(5);
+    const ORBIT_DURATION_MS = 14000;  // longer pass gives a proper cinematic reveal
+    const ORBIT_RANGE = 220;          // 220m radius keeps the camera outside building envelopes
+    const BASE_PITCH = CesiumMath.toRadians(-32); // steeper look-down: cleaner street view below
+    const WOBBLE_AMPLITUDE = CesiumMath.toRadians(6);
     const TWO_PI = Math.PI * 2;
 
     // Disable user input during orbit
@@ -188,40 +188,45 @@ export default function Map3D({
     if (cinematicFlight?.active) {
       const { phase, targetLat, targetLng } = cinematicFlight;
       if (phase === "high-orbit") {
+        // Wide establishing shot — helicopter approach from SW, full skyline context
         return {
-          destination: Cartesian3.fromDegrees(targetLng - 0.005, targetLat - 0.005, 800),
+          destination: Cartesian3.fromDegrees(targetLng - 0.009, targetLat - 0.009, 1100),
           orientation: {
-            heading: CesiumMath.toRadians(25),
-            pitch: CesiumMath.toRadians(-40),
+            heading: CesiumMath.toRadians(30),
+            pitch: CesiumMath.toRadians(-42),
             roll: 0,
           },
-          duration: 3,
+          duration: 4,
         };
       } else if (phase === "approach") {
+        // Sweep in along a street corridor, descending toward the block
         return {
-          destination: Cartesian3.fromDegrees(targetLng - 0.002, targetLat - 0.002, 300),
+          destination: Cartesian3.fromDegrees(targetLng - 0.004, targetLat - 0.004, 320),
           orientation: {
-            heading: CesiumMath.toRadians(20),
-            pitch: CesiumMath.toRadians(-30),
+            heading: CesiumMath.toRadians(22),
+            pitch: CesiumMath.toRadians(-33),
             roll: 0,
           },
           duration: 3,
         };
       } else if (phase === "arrive") {
+        // Street-level hero frame: 100m altitude keeps the camera above facade lines,
+        // 200m south offset frames the POI with the streetscape behind it
         return {
-          destination: Cartesian3.fromDegrees(targetLng - 0.0005, targetLat - 0.0005, 80),
+          destination: Cartesian3.fromDegrees(targetLng - 0.0018, targetLat - 0.0018, 100),
           orientation: {
-            heading: CesiumMath.toRadians(15),
-            pitch: CesiumMath.toRadians(-20),
+            heading: CesiumMath.toRadians(18),
+            pitch: CesiumMath.toRadians(-24),
             roll: 0,
           },
           duration: 3,
         };
       } else if (phase === "orbit") {
-        // Orbit handled imperatively — return stable no-op config
+        // Orbit handled imperatively via preUpdate — this is just the departure point.
+        // 110m keeps us above mid-rise rooflines before the 220m-radius orbit begins.
         return {
-          destination: Cartesian3.fromDegrees(targetLng, targetLat, 40),
-          orientation: { heading: 0, pitch: CesiumMath.toRadians(-15), roll: 0 },
+          destination: Cartesian3.fromDegrees(targetLng, targetLat, 110),
+          orientation: { heading: 0, pitch: CesiumMath.toRadians(-20), roll: 0 },
           duration: 0,
         };
       }

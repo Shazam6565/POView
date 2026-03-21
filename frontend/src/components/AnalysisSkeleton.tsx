@@ -41,25 +41,6 @@ export function AnalysisSkeleton({ stage }: AnalysisSkeletonProps) {
           </div>
         ))}
       </div>
-      
-      {/* Progress Footer */}
-      <div className="mt-auto bg-black/40 backdrop-blur-xl border border-blue-500/30 rounded-xl p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-20" />
-            <ServerCog className="w-5 h-5 text-blue-400 animate-pulse" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xs text-blue-300/70 font-mono tracking-wider uppercase">System Status</span>
-            <span className="text-sm text-blue-100 font-medium">
-              {stage || "Initializing multi-agent protocol..."}
-            </span>
-          </div>
-        </div>
-        <div className="text-xs font-mono text-blue-400/80 bg-blue-500/10 px-2 py-1 rounded">
-          {elapsed}s
-        </div>
-      </div>
     </div>
   );
 }

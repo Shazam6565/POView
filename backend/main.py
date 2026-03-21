@@ -685,30 +685,13 @@ async def live_websocket(websocket: WebSocket, session_id: str, model: str = DEF
 
                         # Text from agent (skip internal reasoning/thinking text)
                         if part.text and not part.function_call and not part.function_response:
-                            text = part.text.strip()
-                            # If text contains a thinking block (e.g. from the start until a closing **), strip it out.
-                            if text.startswith("**"):
-                                # Simple heuristic: find the end of the thinking block by looking for double newlines or end of string
-                                parts_split = text.split("\n\n", 1)
-                                if len(parts_split) > 1:
-                                    text = parts_split[1].strip()
-                                else:
-                                    text = "" # entirely a thinking block
-                                    
-                            if text:
-                                try:
-                                    await websocket.send_text(
-                                        json.dumps(
-                                            {
-                                                "type": "transcript",
-                                                "role": "agent",
-                                                "text": text,
-                                                "finished": True,
-                                            }
-                                        )
-                                    )
-                                except Exception:
-                                    return
+                            # Instead of parsing reasoning blocks, just trigger the thinking animation
+                            try:
+                                await websocket.send_text(
+                                    json.dumps({"type": "state", "state": "thinking"})
+                                )
+                            except Exception:
+                                return
 
                 # Handle input transcription
                 if hasattr(event, "input_transcription") and event.input_transcription:
