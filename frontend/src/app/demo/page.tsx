@@ -487,7 +487,7 @@ export default function DemoPage() {
           <div className="mb-6 inline-flex items-center space-x-2 rounded-full border border-cyan-400/20 bg-cyan-400/5 px-4 py-1.5 backdrop-blur-md">
             <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
             <span className="text-xs font-mono uppercase tracking-widest text-cyan-400">
-              Google ADK Hackathon 2025
+              Vercel x Google Deepmind Hackathon 2026
             </span>
           </div>
         </FadeIn>
@@ -519,7 +519,7 @@ export default function DemoPage() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
-              href="https://github.com/Shazam6565/POView"
+              href="https://github.com/Shazam6565/POView-v1.0.2"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:text-white"

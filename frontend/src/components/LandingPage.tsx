@@ -96,9 +96,9 @@ export default function LandingPage({
         <div className="flex flex-col items-center md:items-start text-center md:text-left md:w-1/2">
           {/* Hero Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6 leading-tight">
-            Where would you like to go{" "}
+            Where are we exploring{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
-              Today, Sir!
+              Today?
             </span>
           </h1>
 
