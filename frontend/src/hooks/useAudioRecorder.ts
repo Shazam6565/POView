@@ -34,6 +34,7 @@ export function useAudioRecorder({ onChunk }: UseAudioRecorderOptions) {
 
     source.connect(workletNode);
     // Don't connect workletNode to destination — we don't want mic playback
+    
     setIsRecording(true);
   }, [isRecording, onChunk]);
 

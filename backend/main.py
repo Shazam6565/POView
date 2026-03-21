@@ -498,6 +498,8 @@ async def live_websocket(websocket: WebSocket, session_id: str, model: str = DEF
                 if "bytes" in data and data["bytes"]:
                     # Binary audio data from browser mic (Int16 PCM 16kHz)
                     audio_bytes = data["bytes"]
+                    if len(audio_bytes) > 0:
+                        print(f"[Live] Received {len(audio_bytes)} bytes of audio from client")
                     try:
                         live_queue.send_realtime(
                             types.Blob(
@@ -683,9 +685,17 @@ async def live_websocket(websocket: WebSocket, session_id: str, model: str = DEF
 
                         # Text from agent (skip internal reasoning/thinking text)
                         if part.text and not part.function_call and not part.function_response:
-                            # Filter out model thinking blocks (start with **)
                             text = part.text.strip()
-                            if not text.startswith("**"):
+                            # If text contains a thinking block (e.g. from the start until a closing **), strip it out.
+                            if text.startswith("**"):
+                                # Simple heuristic: find the end of the thinking block by looking for double newlines or end of string
+                                parts_split = text.split("\n\n", 1)
+                                if len(parts_split) > 1:
+                                    text = parts_split[1].strip()
+                                else:
+                                    text = "" # entirely a thinking block
+                                    
+                            if text:
                                 try:
                                     await websocket.send_text(
                                         json.dumps(

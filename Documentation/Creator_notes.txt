@@ -1,0 +1,25 @@
+I have a hackathon today and i need to prepare this project for the same, these are the details of that hackathon, I need to isolate the tech stack in my documentation to show   :
+
+
+  there usage alligning with the hackathons instructions and need to be prepared for the  :
+
+
+## **our Goal: Hackathon Problem Statements**
+
+This hackathon revolves around **leveraging Vercel’s agent stack as your launchpad and reaching for the stars by tapping into the power of the Gemini to create intelligent agents that can think, plan, and execute.**  
+
+We are going to be using this problem statement to prepare:
+
+- - Build an agent that goes beyond text. Leverage Gemini's multimodal capabilities to create agents that see, hear, or understand the world through images, video, audio, documents, or any combination. Think agents that can watch a livestream and act on it, analyze visual data to make decisions, or navigate rich media environments autonomously.
+----------------------
+obviously we have a much more immersive applicaiton for the demo, a complete freaking globe controlled by a set of agents without even toching the keyboard since the voice assistant takes care of everything - but the goal is to also show the usage of the sponsors of the hackathon to win this thing this time for sure
+-------------------------
+
+And also reference this a bit :
+- **Statement Three: AI Applications**
+
+  - Build an AI-powered application that solves a real problem. It doesn't have to be a fully autonomous agent — it just has to be useful, creative, and well-built. Think AI-native products that people would actually want to use: tools that generate, analyze, transform, or simplify something in a way that wasn't possible before. The focus is on craft, user experience, and shipping something polished.
+
+------------------------------
+
+
