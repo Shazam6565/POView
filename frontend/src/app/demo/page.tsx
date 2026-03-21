@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Cpu,
   Layers,
+  Cloud,
 } from "lucide-react";
 import { InteractiveGridPattern } from "@/components/ui/interactive-grid-pattern";
 import { IconCloud } from "@/components/ui/icon-cloud";
@@ -425,6 +426,16 @@ export default function DemoPage() {
         { label: "Gemini Live API" },
       ],
     },
+    {
+      category: "Deployment",
+      icon: <Cloud className="w-5 h-5" />,
+      items: [
+        {
+          label: "Vercel",
+          url: "https://vercel.com/",
+        },
+      ],
+    },
   ];
 
   return (
@@ -508,7 +519,7 @@ export default function DemoPage() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
-              href="https://github.com/adityasugandhi/POView"
+              href="https://github.com/Shazam6565/POView"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white/70 transition-all hover:bg-white/10 hover:text-white"
@@ -897,11 +908,10 @@ export default function DemoPage() {
                 ].map((item) => (
                   <span
                     key={item.key}
-                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-mono ${
-                      item.rw.includes("W")
+                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-mono ${item.rw.includes("W")
                         ? "border-cyan-400/30 bg-cyan-400/10 text-cyan-400"
                         : "border-white/10 bg-white/5 text-white/50"
-                    }`}
+                      }`}
                   >
                     {item.key}{" "}
                     <span className="text-[9px] opacity-60">({item.rw})</span>
@@ -1268,7 +1278,7 @@ export default function DemoPage() {
 
       {/* ─── Footer ─── */}
       <footer className="relative z-10 border-t border-white/5 py-8 text-center text-xs font-mono text-white/30 tracking-widest uppercase">
-        POView — Built with Google ADK, Gemini, and Google Maps Platform
+        POView — Built with Google ADK, Gemini, Google Maps Platform, and deployed on Vercel
       </footer>
     </div>
   );

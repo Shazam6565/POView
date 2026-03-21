@@ -1,4 +1,5 @@
 # POView
+[![Powered by Vercel](https://vercel.com/button)](https://vercel.com/)
 **Autonomous Urban Intelligence & Spatial Telemetry**
 
 POView is a next-generation analytical platform that merges an immersive 3D geospatial engine with a conversational AI voice assistant. Built on Google's Gemini Live API and the Agent Development Kit (ADK), POView enables users to explore neighborhoods through cinematic drone flyovers, natural voice dialogue, and real-time AI-powered neighborhood profiling.
@@ -18,6 +19,7 @@ POView is a next-generation analytical platform that merges an immersive 3D geos
 - **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS v4, Resium (CesiumJS)
 - **Backend:** Python FastAPI, Google ADK (Agent Development Kit), Pydantic
 - **AI/Voice:** Google Gemini Live API, WebSocket real-time audio streaming
+- **Deployment:** Vercel (Frontend & Serverless Edge Functions)
 - **3D Engine:** CesiumJS with Google Maps 3D Photorealistic Tiles
 - **State Management:** Zustand (reactive + transient partitions)
 - **APIs:** Google Places API, Google Routes API v2, Google Geocoding API, Open-Meteo Weather API
